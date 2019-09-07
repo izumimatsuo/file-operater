@@ -6,6 +6,7 @@ import simplejson
 from flask import Flask, request, render_template, redirect, flash, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug import secure_filename
 from collections import defaultdict
 
@@ -14,6 +15,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
 app.config['UPLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -24,6 +27,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
 
 bootstrap = Bootstrap(app)
+db = SQLAlchemy(app)
 
 
 def allowed_file(filename):
@@ -105,16 +109,14 @@ def get_file(filename):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == "POST":
-        if(request.form["username"] in user_check and request.form["password"] == user_check[request.form["username"]]["password"]):
-            login_user(users.get(user_check[request.form["username"]]["id"]))
+    if(request.method == "POST"):
+        user = User.query.filter_by(username=request.form["username"]).first()
+        if user is not None and user.password == request.form["password"]:
+            login_user(user)
             return redirect(request.args.get("next") or url_for("index"))
         else:
-            flash("ログインするには正しい情報を入力して下さい", "error")
-            return redirect(url_for("login"))
-
-    if request.method == 'GET':
-        return render_template("login.html")
+            flash("ユーザ名かパスワードが誤りです。正しい情報を入力して下さい", "error")
+    return render_template("login.html")
 
 
 @app.route('/logout')
@@ -132,27 +134,15 @@ def index():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return users.get(int(user_id))
+    return User.query.get(int(user_id))
 
 
-class User(UserMixin):
-    def __init__(self, id, name, password):
-        self.id = id
-        self.name = name
-        self.password = password
-
-
-users = {
-    1: User(1, "user1", "password"),
-    2: User(2, "user2", "password")
-}
-
-
-nested_dict = lambda: defaultdict(nested_dict)
-user_check = nested_dict()
-for i in users.values():
-    user_check[i.name]["password"] = i.password
-    user_check[i.name]["id"] = i.id
+class User(db.Model, UserMixin):
+    __tablename__ = 'user_accounts'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String)
+    password = db.Column(db.String)
+    companyid = db.Column(db.String)
 
 
 class uploadfile():
