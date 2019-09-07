@@ -8,8 +8,6 @@ from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug import secure_filename
-from collections import defaultdict
-
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
@@ -23,11 +21,11 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message = "このサイトを利用するにはログインしてください"
 
-ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
-IGNORED_FILES = set(['.gitignore'])
-
 bootstrap = Bootstrap(app)
 db = SQLAlchemy(app)
+
+ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
+IGNORED_FILES = set(['.gitignore'])
 
 
 def allowed_file(filename):
@@ -45,7 +43,7 @@ def gen_file_name(filename):
     return filename
 
 
-@app.route("/upload", methods=['GET', 'POST'])
+@app.route("/upload", methods = ['GET', 'POST'])
 @login_required
 def upload():
     if request.method == 'POST':
@@ -57,25 +55,17 @@ def upload():
             mime_type = files.content_type
 
             if not allowed_file(files.filename):
-                result = uploadfile(name=filename, type=mime_type, size=0, not_allowed_msg="サポートされないファイルタイプです。")
-
+                result = uploadfile(name = filename, type = mime_type, size = 0, not_allowed_msg = "サポートされないファイルタイプです。")
             else:
-                # save file to disk
                 uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 files.save(uploaded_file_path)
-
-                # get file size after saving
                 size = os.path.getsize(uploaded_file_path)
-
-                # return json for js call back
-                result = uploadfile(name=filename, type=mime_type, size=size)
+                result = uploadfile(name = filename, type = mime_type, size = size)
             
             return simplejson.dumps({"files": [result.get_file()]})
 
     if request.method == 'GET':
-        # get all file in ./data directory
         files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'],f)) and f not in IGNORED_FILES ]
-        
         file_display = []
 
         for f in files:
@@ -101,23 +91,25 @@ def delete(filename):
             return simplejson.dumps({filename: 'False'})
 
 
-@app.route("/data/<string:filename>", methods=['GET'])
+@app.route("/data/<string:filename>", methods = ['GET'])
 @login_required
 def get_file(filename):
-    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename=filename)
+    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename = filename)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods = ['GET', 'POST'])
 def login():
     if(request.method == "POST"):
         form = request.form
-        user = User.query.filter_by(username=form["username"]).first()
+        user = User.query.filter_by(username = form["username"]).first()
+
         if user is not None and user.password == form["password"]:
             login_user(user)
             return redirect(request.args.get("next") or url_for("index"))
         else:
             flash("ユーザ名かパスワードが誤りです。正しい情報を入力して下さい", "error")
-            return render_template("login.html", username=form["username"], password=form["password"])
+            return render_template("login.html", username = form["username"], password = form["password"])
+
     return render_template("login.html")
 
 
@@ -128,7 +120,7 @@ def logout():
     return redirect(url_for("index"))
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods = ['GET', 'POST'])
 @login_required
 def index():
     return render_template('index.html')
@@ -141,14 +133,14 @@ def load_user(user_id):
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user_accounts'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String)
     password = db.Column(db.String)
     companyid = db.Column(db.String)
 
 
 class uploadfile():
-    def __init__(self, name, type=None, size=None, not_allowed_msg=''):
+    def __init__(self, name, type = None, size = None, not_allowed_msg = ''):
         self.name = name
         self.type = type
         self.size = size
@@ -186,4 +178,4 @@ class uploadfile():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host = '0.0.0.0', port = 5000)
