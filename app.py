@@ -110,12 +110,14 @@ def get_file(filename):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if(request.method == "POST"):
-        user = User.query.filter_by(username=request.form["username"]).first()
-        if user is not None and user.password == request.form["password"]:
+        form = request.form
+        user = User.query.filter_by(username=form["username"]).first()
+        if user is not None and user.password == form["password"]:
             login_user(user)
             return redirect(request.args.get("next") or url_for("index"))
         else:
             flash("ユーザ名かパスワードが誤りです。正しい情報を入力して下さい", "error")
+            return render_template("login.html", username=form["username"], password=form["password"])
     return render_template("login.html")
 
 
