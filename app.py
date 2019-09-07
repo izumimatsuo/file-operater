@@ -6,6 +6,7 @@ import simplejson
 from flask import Flask, request, render_template, redirect, flash, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
+from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug import secure_filename
 
@@ -23,6 +24,7 @@ login_manager.login_message = "このサイトを利用するにはログイン�
 
 bootstrap = Bootstrap(app)
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
@@ -103,7 +105,7 @@ def login():
         form = request.form
         user = User.query.filter_by(username = form["username"]).first()
 
-        if user is not None and user.password == form["password"]:
+        if user and bcrypt.check_password_hash(user.password, form["password"]):
             login_user(user)
             return redirect(request.args.get("next") or url_for("index"))
         else:
