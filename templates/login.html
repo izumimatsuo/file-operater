@@ -25,15 +25,15 @@
       font-weight: bold;
     }
     .error {
-      background: #FF9999;
+      color: #FF9999;
     }
 </style>
 <div class="login-form">
-    {% with errors = get_flashed_messages(category_filter=["error"]) %}
-      {% if errors %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
         <ul class=flashes>
-        {% for message in errors %}
-          <li class="error">{{ message }}</li>
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
         {% endfor %}
         </ul>
       {% endif %}
@@ -47,7 +47,10 @@
             <input type="password" class="form-control" placeholder="password" required="required" name="password">
         </div>
         <div class="form-group">
-            <button type="submit" class="btn btn-primary btn-block">ログイン</button>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="glyphicon glyphicon-log-in"></i>
+              <span>　ログイン</span>
+            </button>
         </div>
     </form>
 </div>

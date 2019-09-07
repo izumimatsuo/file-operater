@@ -18,6 +18,7 @@ app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+login_manager.login_message = "このサイトを利用するにはログインしてください"
 
 ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
@@ -109,7 +110,7 @@ def login():
             login_user(users.get(user_check[request.form["username"]]["id"]))
             return redirect(request.args.get("next") or url_for("index"))
         else:
-            flash("正しい情報を入力して下さい", "error")
+            flash("ログインするには正しい情報を入力して下さい", "error")
             return redirect(url_for("login"))
 
     if request.method == 'GET':
