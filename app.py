@@ -62,8 +62,6 @@ def upload():
 
         return simplejson.dumps({"files": file_display})
 
-    return redirect(url_for('index'))
-
 
 @app.route("/api/v1/files/<string:filename>", methods=['DELETE'])
 @login_required
