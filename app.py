@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
 app.config['UPLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///test.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 login_manager = LoginManager()
@@ -28,6 +28,9 @@ bcrypt = Bcrypt(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
+
+DB_TABLE_NAME = 'user_accounts'
+COLUMN_COMPANY_ID = os.getenv('COMPANY_ID', 'hogehoge')
 
 
 @app.route("/api/v1/files", methods = ['GET', 'POST'])
@@ -86,7 +89,7 @@ def get_file(filename):
 def login():
     if(request.method == "POST"):
         form = request.form
-        user = User.query.filter_by(username = form["username"]).first()
+        user = User.query.filter_by(username = form["username"], companyid = COLUMN_COMPANY_ID).first()
 
         if user and bcrypt.check_password_hash(user.password, form["password"]):
             login_user(user)
@@ -132,7 +135,7 @@ def load_user(user_id):
 
 
 class User(db.Model, UserMixin):
-    __tablename__ = 'user_accounts'
+    __tablename__ = DB_TABLE_NAME
     id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String)
     password = db.Column(db.String)
