@@ -78,6 +78,8 @@ def delete(filename):
         except:
             return simplejson.dumps({filename: 'False'})
 
+    return simplejson.dumps({filename: 'False'})
+
 
 @app.route("/api/v1/files/<string:filename>", methods = ['GET'])
 @login_required
@@ -132,6 +134,18 @@ def gen_file_name(filename):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    auth = request.authorization
+    if auth and auth.type == 'basic':
+        user = User.query.filter_by(username = auth.username, companyid = COLUMN_COMPANY_ID).first()
+
+        if user and bcrypt.check_password_hash(user.password, auth.password):
+            return user
+
+    return None
 
 
 class User(db.Model, UserMixin):
