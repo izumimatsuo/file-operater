@@ -30,7 +30,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
 
 
-@app.route("/api/v1/upload", methods = ['GET', 'POST'])
+@app.route("/api/v1/files", methods = ['GET', 'POST'])
 @login_required
 def upload():
     if request.method == 'POST':
@@ -65,7 +65,7 @@ def upload():
     return redirect(url_for('index'))
 
 
-@app.route("/api/v1/delete/<string:filename>", methods=['DELETE'])
+@app.route("/api/v1/files/<string:filename>", methods=['DELETE'])
 @login_required
 def delete(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -78,7 +78,7 @@ def delete(filename):
             return simplejson.dumps({filename: 'False'})
 
 
-@app.route("/api/v1/data/<string:filename>", methods = ['GET'])
+@app.route("/api/v1/files/<string:filename>", methods = ['GET'])
 @login_required
 def get_file(filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename = filename)
@@ -147,8 +147,8 @@ class uploadfile():
         self.type = type
         self.size = size
         self.not_allowed_msg = not_allowed_msg
-        self.url = "api/v1/data/%s" % name
-        self.delete_url = "api/v1/delete/%s" % name
+        self.url = "api/v1/files/%s" % name
+        self.delete_url = "api/v1/files/%s" % name
         self.delete_type = "DELETE"
 
 
