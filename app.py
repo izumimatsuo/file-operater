@@ -30,22 +30,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def gen_file_name(filename):
-    i = 1
-    while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
-        name, extension = os.path.splitext(filename)
-        filename = '%s_%s%s' % (name, str(i), extension)
-        i += 1
-
-    return filename
-
-
-@app.route("/upload", methods = ['GET', 'POST'])
+@app.route("/api/v1/upload", methods = ['GET', 'POST'])
 @login_required
 def upload():
     if request.method == 'POST':
@@ -80,7 +65,7 @@ def upload():
     return redirect(url_for('index'))
 
 
-@app.route("/delete/<string:filename>", methods=['DELETE'])
+@app.route("/api/v1/delete/<string:filename>", methods=['DELETE'])
 @login_required
 def delete(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -93,7 +78,7 @@ def delete(filename):
             return simplejson.dumps({filename: 'False'})
 
 
-@app.route("/data/<string:filename>", methods = ['GET'])
+@app.route("/api/v1/data/<string:filename>", methods = ['GET'])
 @login_required
 def get_file(filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename = filename)
@@ -128,6 +113,21 @@ def index():
     return render_template('index.html')
 
 
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def gen_file_name(filename):
+    i = 1
+    while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+        name, extension = os.path.splitext(filename)
+        filename = '%s_%s%s' % (name, str(i), extension)
+        i += 1
+
+    return filename
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -147,8 +147,8 @@ class uploadfile():
         self.type = type
         self.size = size
         self.not_allowed_msg = not_allowed_msg
-        self.url = "data/%s" % name
-        self.delete_url = "delete/%s" % name
+        self.url = "api/v1/data/%s" % name
+        self.delete_url = "api/v1/delete/%s" % name
         self.delete_type = "DELETE"
 
 
