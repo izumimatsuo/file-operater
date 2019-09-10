@@ -25,16 +25,16 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="/">ホーム</a>
+            <a class="navbar-brand" href="{{ url_for('index') }}">ホーム</a>
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav mr-auto">
-                <li><a href="/">ヘルプ</a></li>
+                <li><a href="{{ url_for('index') }}">ヘルプ</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 {% if current_user.is_authenticated %}
                 <li class="navbar-text">ログイン中: {{ current_user.username }}</li>
-                <li><a href="/logout">ログアウト</a></li>
+                <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
                 {% else %}
                 <li class="navbar-text">ログイン未:</li>
                 {% endif %}

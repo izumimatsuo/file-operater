@@ -5,12 +5,15 @@ import simplejson
 
 from flask import Flask, request, render_template, redirect, flash, url_for, send_from_directory
 from flask_bootstrap import Bootstrap
-from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
+from flask_login import LoginManager, current_user, login_user, logout_user, login_required, UserMixin
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug import secure_filename
 
-app = Flask(__name__)
+APP_NAME = os.getenv('APP_NAME', '/filebox')
+DB_TABLE_NAME = 'user_accounts'
+
+app = Flask(__name__, static_url_path = APP_NAME + '/static')
 app.config['SECRET_KEY'] = 'hard to guess string'
 app.config['UPLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', '5')) * 1024 * 1024
@@ -29,11 +32,8 @@ bcrypt = Bcrypt(app)
 ALLOWED_EXTENSIONS = set(['txt', 'zip', 'xls', 'xlsx'])
 IGNORED_FILES = set(['.gitignore'])
 
-DB_TABLE_NAME = 'user_accounts'
-COLUMN_COMPANY_ID = os.getenv('COMPANY_ID', 'hogehoge')
 
-
-@app.route("/api/v1/files", methods = ['GET', 'POST'])
+@app.route(APP_NAME + "/api/v1/files", methods = ['GET', 'POST'])
 @login_required
 def upload():
     if request.method == 'POST':
@@ -47,7 +47,7 @@ def upload():
             if not allowed_file(files.filename):
                 result = uploadfile(name = filename, type = mime_type, size = 0, not_allowed_msg = "サポートされないファイルタイプです。")
             else:
-                uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], current_user.companyid + '_' + filename)
                 files.save(uploaded_file_path)
                 size = os.path.getsize(uploaded_file_path)
                 result = uploadfile(name = filename, type = mime_type, size = size)
@@ -60,16 +60,16 @@ def upload():
 
         for f in files:
             size = os.path.getsize(os.path.join(app.config['UPLOAD_FOLDER'], f))
-            file_saved = uploadfile(name=f, size=size)
+            file_saved = uploadfile(name = f.replace(current_user.companyid + '_', ''), size = size)
             file_display.append(file_saved.get_file())
 
         return simplejson.dumps({"files": file_display})
 
 
-@app.route("/api/v1/files/<string:filename>", methods=['DELETE'])
+@app.route(APP_NAME + "/api/v1/files/<string:filename>", methods=['DELETE'])
 @login_required
 def delete(filename):
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], current_user.companyid + '_' + filename)
 
     if os.path.exists(file_path):
         try:
@@ -81,36 +81,36 @@ def delete(filename):
     return simplejson.dumps({filename: 'False'})
 
 
-@app.route("/api/v1/files/<string:filename>", methods = ['GET'])
+@app.route(APP_NAME + "/api/v1/files/<string:filename>", methods = ['GET'])
 @login_required
 def get_file(filename):
-    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename = filename)
+    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename = current_user.companyid + '_' + filename)
 
 
-@app.route('/login', methods = ['GET', 'POST'])
+@app.route(APP_NAME + '/login', methods = ['GET', 'POST'])
 def login():
     if(request.method == "POST"):
         form = request.form
-        user = User.query.filter_by(username = form["username"], companyid = COLUMN_COMPANY_ID).first()
+        user = User.query.filter_by(username = form["username"], companyid = form["companyid"]).first()
 
         if user and bcrypt.check_password_hash(user.password, form["password"]):
             login_user(user)
             return redirect(request.args.get("next") or url_for("index"))
         else:
-            flash("ユーザ名かパスワードが誤りです。正しい情報を入力して下さい", "error")
-            return render_template("login.html", username = form["username"], password = form["password"])
+            flash("企業IDまたはユーザ名かパスワードが誤りです。正しい情報を入力して下さい", "error")
+            return render_template("login.html", companyid = form["companyid"], username = form["username"], password = form["password"])
 
     return render_template("login.html")
 
 
-@app.route('/logout')
+@app.route(APP_NAME + '/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for("index"))
 
 
-@app.route('/', methods = ['GET', 'POST'])
+@app.route(APP_NAME + '/')
 @login_required
 def index():
     return render_template('index.html')
@@ -123,7 +123,7 @@ def allowed_file(filename):
 
 def gen_file_name(filename):
     i = 1
-    while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+    while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], current_user.companyid + '_' + filename)):
         name, extension = os.path.splitext(filename)
         filename = '%s_%s%s' % (name, str(i), extension)
         i += 1
@@ -140,7 +140,7 @@ def load_user(user_id):
 def load_user_from_request(request):
     auth = request.authorization
     if auth and auth.type == 'basic':
-        user = User.query.filter_by(username = auth.username, companyid = COLUMN_COMPANY_ID).first()
+        user = User.query.filter_by(username = auth.username, companyid = request.args.get('companyid')).first()
 
         if user and bcrypt.check_password_hash(user.password, auth.password):
             return user
