@@ -140,7 +140,7 @@ def load_user(user_id):
 def load_user_from_request(request):
     auth = request.authorization
     if auth and auth.type == 'basic':
-        user = User.query.filter_by(username = auth.username, companyid = request.args.get('companyid')).first()
+        user = User.query.filter_by(username = auth.username, companyid = request.args.get('id')).first()
 
         if user and bcrypt.check_password_hash(user.password, auth.password):
             return user
